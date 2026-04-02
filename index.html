@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-  <html lang="ja">
-  <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
-  <title>家族カーシェア</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-  *{box-sizing:border-box;margin:0;padding:0}
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>家族カーシェア</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN',sans-serif;background:#f0f2f5;min-height:100vh;display:flex;justify-content:center}
 .app{width:100%;max-width:430px;background:#fff;min-height:100vh;display:flex;flex-direction:column}
 .header{background:#0a7ea4;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
@@ -17,23 +17,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN',sa
 .tab-icon{font-size:18px;display:block;margin-bottom:2px}
 .content{flex:1;padding:16px;padding-bottom:80px}
 .month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.month-nav button{background:#f5f5f5;border:1px solid #e5e7eb;borderh-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px}
-  .month-title{font-size:15px;font-weight:600}
+.month-nav button{background:#f5f5f5;border:1px solid #e5e7eb;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px}
+.month-title{font-size:15px;font-weight:600}
 .res-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:8px;overflow:hidden}
-  .card-top{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px}
+.card-top{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px}
 .car-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px}
 .lexus{background:#dbeafe;color:#1e40af}
 .alphard{background:#d1fae5;color:#065f46}
-  .del-btn{background:#fee2e2;border:none;color:#dc2626;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px}
-  .card-body{padding:0 12px 10px;cursor:pointer}
+.del-btn{background:#fee2e2;border:none;color:#dc2626;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px}
+.card-body{padding:0 12px 10px;cursor:pointer}
 .card-row{display:flex;gap:8px;margin-bottom:3px;font-size:13px}
 .card-lbl{color:#9ca3af;min-width:40px}
 .empty{text-align:center;padding:48px 20px;color:#9ca3af;font-size:14px}
 .fab{position:fixed;bottom:76px;right:16px;width:52px;height:52px;border-radius:50%;background:#0a7ea4;color:#fff;border:none;font-size:26px;cursor:pointer;box-shadow:0 4px 12px rgba(10,126,164,0.4);z-index:100}
-  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
 .overlay.open{display:flex}
-  .modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:430px;max-height:88vh;overflow-y:auto}
-  .handle{width:36px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 16px}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:430px;max-height:88vh;overflow-y:auto}
+.handle{width:36px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 16px}
 .modal-title{font-size:16px;font-weight:600;margin-bottom:16px}
 .flabel{font-size:12px;color:#6b7280;margin-bottom:6px;display:block;margin-top:12px}
 .tgrp{display:flex;gap:6px;flex-wrap:wrap}
@@ -41,72 +41,115 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN',sa
 .tbtn.sel{background:#0a7ea4;color:#fff;border-color:#0a7ea4}
 .tinput{width:100%;padding:9px 12px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;font-family:inherit}
 .sw-row{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
-  .sw{position:relative;width:44px;height:24px}
-  .sw input{opacity:0;width:0;height:0}
+.sw{position:relative;width:44px;height:24px}
+.sw input{opacity:0;width:0;height:0}
 .sw-sl{position:absolute;inset:0;background:#d1d5db;border-radius:24px;cursor:pointer;transition:.2s}
 .sw-sl:before{content:'';position:absolute;width:20px;height:20px;left:2px;bottom:2px;background:#fff;border-radius:50%;transition:.2s}
-  input:checked+.sw-sl{background:#0a7ea4}
+input:checked+.sw-sl{background:#0a7ea4}
 input:checked+.sw-sl:before{transform:translateX(20px)}
-    .mbtns{display:flex;gap:8px;margin-top:16px}
-  .btn-ok{flex:1;padding:11px;background:#0a7ea4;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.mbtns{display:flex;gap:8px;margin-top:16px}
+.btn-ok{flex:1;padding:11px;background:#0a7ea4;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
 .btn-cancel{flex:1;padding:11px;background:#f5f5f5;color:#374151;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:14px}
-  .loading{text-align:center;padding:40px;color:#9ca3af}
+.loading{text-align:center;padding:40px;color:#9ca3af}
+.stat-card{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:12px}
+.stat-title{font-size:13px;font-weight:600;color:#374151;margin-bottom:10px}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+.stat-row:last-child{border-bottom:none}
+.stat-name{color:#6b7280}
+.stat-num{font-weight:600;color:#0a7ea4}
 </style>
-  </head>
-  <body>
-  <div class="app">
-    <div class="header">
-      <h1>🚗 家族カーシェア</h1>
-    </div>
-    <div class="tab-bar">
+</head>
+<body>
+<div class="app">
+  <div class="header"><h1>🚗 家族カーシェア</h1></div>
+  <div class="tab-bar">
     <div class="tab active" onclick="sw(0)"><span class="tab-icon">📅</span>予約</div>
-      <div class="tab" onclick="sw(1)"><span class="tab-icon">📊</span>統計</div>
-    </div>
-    <div class="content" id="content"><div class="loading">読み込み中...</div></div>
-    <button class="fab" onclick="openAdd()">+</button>
+    <div class="tab" onclick="sw(1)"><span class="tab-icon">📊</span>統計</div>
   </div>
-  <div class="overlay" id="ov" onclick="if(event.target===this)closeModal()">
-    <div class="modal" id="modal"></div>
-  </div>
-  <script>
-  const SUPABASE_URL = 'https://qcrqhawjpfzrxexshkjw.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjcnFoYXdqcGZ6cnhleHNoa2p3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NTk1OTUsImV4cCI6MjA5MDUzNTU5NX0.kuJ3JNr0dKxqqydO5uiR_57X0YtdIm8gXxP7kcOsAyM';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+  <div class="content" id="content"><div class="loading">読み込み中...</div></div>
+  <button class="fab" onclick="openAdd()">+</button>
+</div>
+<div class="overlay" id="ov" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal"></div>
+</div>
+<script>
+const SUPABASE_URL='https://qcrqhawjpfzrxexshkjw.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjcnFoYXdqcGZ6cnhleHNoa2p3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NTk1OTUsImV4cCI6MjA5MDUzNTU5NX0.kuJ3JNr0dKxqqydO5uiR_57X0YtdIm8gXxP7kcOsAyM';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const MEMBERS=['健吾','まどか','健一郎','英太郎','光太郎'];
 const CARS=['レクサス','アルファード'];
 const pad=n=>String(n).padStart(2,'0');
-const fmtD=s=>{const d=new Date(s+'T00:00:00');return `${d.getMonth()+1}/${d.getDate()}(${['日','月','火','水','木','金','土'][d.getDay()]})`};
+const fmtD=s=>{const d=new Date(s+'T00:00:00');return (d.getMonth()+1)+'/'+d.getDate()+'('+['日','月','火','水','木','金','土'][d.getDay()]+')'};
 const fmtT=r=>r.is_all_day?'終日':(r.start_time+(r.end_time?'〜'+r.end_time:''));
-
 let tab=0,month=new Date(),mCar='レクサス',mUser='健吾',reservations=[];
-
 async function loadData(){
-    const yr=month.getFullYear(),mo=month.getMonth();
-  const from=`${yr}-${pad(mo+1)}-01`;
-  const to=`${yr}-${pad(mo+1)}-${new Date(yr,mo+1,0).getDate()}`;
-  const {data}=await sb.from('reservations').select('*').gte('date',from).lte('date',to).order('date');
-  reservations=data||[];
+  const yr=month.getFullYear(),mo=month.getMonth();
+  const from=yr+'-'+pad(mo+1)+'-01';
+  const to=yr+'-'+pad(mo+1)+'-'+new Date(yr,mo+1,0).getDate();
+  try{const {data,error}=await sb.from('reservations').select('*').gte('date',from).lte('date',to).order('date');if(error)throw error;reservations=data||[];}catch(e){console.error(e);reservations=[];}
   render();
 }
-
 function sw(i){tab=i;document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));render();}
-
-function render(){
-  if(tab===0)renderTab0();
-  else renderTab1();
-}
-
+function render(){if(tab===0)renderTab0();else renderTab1();}
 function renderTab0(){
   const yr=month.getFullYear(),mo=month.getMonth();
-  let html=`<div class="month-nav">
-    <button onclick="prevM()">← 前月</button>
-    <span class="month-title">${yr}年${mo+1}月</span>
-    <button onclick="nextM()">次月 →</button>
-  </div>`;
-  if(!reservations.length){html+='<div class="empty">📅<br>この月の予約はありません</div>';}
-  else{reservations.forEach(r=>{
-    const bc=r.car_name==='レクサス'?'lexus':'alphard';
-    html+=`<div class="res-card">
-      <div class="card-top"><span class="car-badge ${bc}">${r.car_name}</span>
-      <button class="del-btn" onclic
+  let h='<div class="month-nav"><button onclick="prevM()">← 前月</button><span class="month-title">'+yr+'年'+(mo+1)+'月</span><button onclick="nextM()">次月 →</button></div>';
+  if(!reservations.length){h+='<div class="empty">📅<br>この月の予約はありません</div>';}
+  else{reservations.forEach(r=>{const bc=r.car_name==='レクサス'?'lexus':'alphard';h+='<div class="res-card"><div class="card-top"><span class="car-badge '+bc+'">'+r.car_name+'</span><button class="del-btn" onclick="delRes('+r.id+')">✕</button></div><div class="card-body" onclick="editRes('+r.id+')"><div class="card-row"><span class="card-lbl">日付</span><span>'+fmtD(r.date)+'</span></div><div class="card-row"><span class="card-lbl">時間</span><span>'+fmtT(r)+'</span></div><div class="card-row"><span class="card-lbl">使用者</span><span>'+r.user_name+'</span></div>'+(r.comment?'<div class="card-row"><span class="card-lbl">メモ</span><span>'+r.comment+'</span></div>':'')+'</div></div>';});}
+  document.getElementById('content').innerHTML=h;
+}
+function renderTab1(){
+  const yr=month.getFullYear(),mo=month.getMonth();
+  const counts={};
+  MEMBERS.forEach(m=>{counts[m]=0});
+  reservations.forEach(r=>{if(counts[r.user_name]!==undefined)counts[r.user_name]++;});
+  let h='<div class="month-nav"><button onclick="prevM()">← 前月</button><span class="month-title">'+yr+'年'+(mo+1)+'月</span><button onclick="nextM()">次月 →</button></div><div class="stat-card"><div class="stat-title">📊 メンバー別利用回数</div>';
+  const hasData=reservations.length>0;
+  MEMBERS.forEach(m=>{if(counts[m]>0)h+='<div class="stat-row"><span class="stat-name">'+m+'</span><span class="stat-num">'+counts[m]+'回</span></div>';});
+  if(!hasData)h+='<div style="text-align:center;padding:16px;color:#9ca3af;font-size:13px">データなし</div>';
+  h+='</div>';
+  document.getElementById('content').innerHTML=h;
+}
+function prevM(){month=new Date(month.getFullYear(),month.getMonth()-1,1);loadData();}
+function nextM(){month=new Date(month.getFullYear(),month.getMonth()+1,1);loadData();}
+function openAdd(){
+  const t=new Date();const yy=t.getFullYear(),mm=pad(t.getMonth()+1),dd=pad(t.getDate());
+  document.getElementById('modal').innerHTML='<div class="handle"></div><div class="modal-title">新規予約</div><label class="flabel">車</label><div class="tgrp">'+CARS.map(c=>'<button class="tbtn'+(mCar===c?' sel':'')+'" onclick="selCar(''+c+'',this)">'+c+'</button>').join('')+'</div><label class="flabel">使用者</label><div class="tgrp">'+MEMBERS.map(m=>'<button class="tbtn'+(mUser===m?' sel':'')+'" onclick="selUser(''+m+'',this)">'+m+'</button>').join('')+'</div><label class="flabel">日付</label><input class="tinput" type="date" id="mDate" value="'+yy+'-'+mm+'-'+dd+'"><div class="sw-row"><span style="font-size:13px">終日</span><label class="sw"><input type="checkbox" id="mAllDay" checked onchange="toggleTime()"><span class="sw-sl"></span></label></div><div id="timeFields" style="display:none"><label class="flabel">開始</label><input class="tinput" type="time" id="mStart"><label class="flabel">終了</label><input class="tinput" type="time" id="mEnd"></div><label class="flabel">メモ</label><input class="tinput" type="text" id="mComment" placeholder="例：買い物"><div class="mbtns"><button class="btn-cancel" onclick="closeModal()">キャンセル</button><button class="btn-ok" onclick="saveRes()">予約する</button></div>';
+  document.getElementById('ov').classList.add('open');
+}
+function selCar(c,el){mCar=c;el.closest('.tgrp').querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');}
+function selUser(u,el){mUser=u;el.closest('.tgrp').querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');}
+function toggleTime(){document.getElementById('timeFields').style.display=document.getElementById('mAllDay').checked?'none':'block';}
+function closeModal(){document.getElementById('ov').classList.remove('open');}
+async function saveRes(){
+  const date=document.getElementById('mDate').value;
+  if(!date){alert('日付を選択してください');return;}
+  const allDay=document.getElementById('mAllDay').checked;
+  const {error}=await sb.from('reservations').insert({car_name:mCar,user_name:mUser,date,is_all_day:allDay,start_time:allDay?null:document.getElementById('mStart').value||null,end_time:allDay?null:document.getElementById('mEnd').value||null,comment:document.getElementById('mComment').value||null});
+  if(error){alert('エラー: '+error.message);return;}
+  closeModal();loadData();
+}
+async function delRes(id){
+  if(!confirm('削除しますか？'))return;
+  const {error}=await sb.from('reservations').delete().eq('id',id);
+  if(error){alert('削除エラー: '+error.message);return;}
+  loadData();
+}
+function editRes(id){
+  const r=reservations.find(x=>x.id===id);if(!r)return;
+  mCar=r.car_name;mUser=r.user_name;
+  document.getElementById('modal').innerHTML='<div class="handle"></div><div class="modal-title">予約を編集</div><label class="flabel">車</label><div class="tgrp">'+CARS.map(c=>'<button class="tbtn'+(mCar===c?' sel':'')+'" onclick="selCar(''+c+'',this)">'+c+'</button>').join('')+'</div><label class="flabel">使用者</label><div class="tgrp">'+MEMBERS.map(m=>'<button class="tbtn'+(mUser===m?' sel':'')+'" onclick="selUser(''+m+'',this)">'+m+'</button>').join('')+'</div><label class="flabel">日付</label><input class="tinput" type="date" id="mDate" value="'+r.date+'"><div class="sw-row"><span style="font-size:13px">終日</span><label class="sw"><input type="checkbox" id="mAllDay" '+(r.is_all_day?'checked':'')+' onchange="toggleTime()"><span class="sw-sl"></span></label></div><div id="timeFields" style="display:'+(r.is_all_day?'none':'block')+'"><label class="flabel">開始</label><input class="tinput" type="time" id="mStart" value="'+(r.start_time||'')+'"><label class="flabel">終了</label><input class="tinput" type="time" id="mEnd" value="'+(r.end_time||'')+'"></div><label class="flabel">メモ</label><input class="tinput" type="text" id="mComment" value="'+(r.comment||'')+'" placeholder="例：買い物"><div class="mbtns"><button class="btn-cancel" onclick="closeModal()">キャンセル</button><button class="btn-ok" onclick="updateRes('+id+')">更新する</button></div>';
+  document.getElementById('ov').classList.add('open');
+}
+async function updateRes(id){
+  const date=document.getElementById('mDate').value;
+  if(!date){alert('日付を選択してください');return;}
+  const allDay=document.getElementById('mAllDay').checked;
+  const {error}=await sb.from('reservations').update({car_name:mCar,user_name:mUser,date,is_all_day:allDay,start_time:allDay?null:document.getElementById('mStart').value||null,end_time:allDay?null:document.getElementById('mEnd').value||null,comment:document.getElementById('mComment').value||null}).eq('id',id);
+  if(error){alert('更新エラー: '+error.message);return;}
+  closeModal();loadData();
+}
+loadData();
+</script>
+</body>
+</html>
