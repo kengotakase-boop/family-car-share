@@ -680,7 +680,7 @@ function renderResList() {
     </div>`).join('');
 }
 async function deleteRes(id){ const _dr=await fetch('/api/reservations/'+id,{method:'DELETE'}); if(!_dr.ok){showToast('削除失敗');return;}
-  reservations=reservations.filter(r=>r.id!==id);
+  reservations=reservations.filter(r=>String(r.id)!==String(id));
   renderResList();renderHistList();renderCalendar();
   showToast('予約を削除しました');
 }
@@ -748,7 +748,7 @@ function closeSheet(e) {
 
 async function deleteResFromSheet(id, date) {
     const _ds=await fetch('/api/reservations/'+id,{method:'DELETE'}); if(!_ds.ok){showToast('削除失敗');return;}
-  reservations = reservations.filter(r=>r.id!==id);
+  reservations = reservations.filter(r=>String(r.id)!==String(id));
   renderCalendar(); renderResList(); renderHistList();
   showToast('予約を削除しました');
   openSheet(date);
