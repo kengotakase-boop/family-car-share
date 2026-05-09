@@ -28,6 +28,10 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
+function getManusIndexPath() {
+  return path.resolve(process.cwd(), "server/manus/index_3.html");
+}
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
@@ -68,6 +72,15 @@ async function startServer() {
 
   const reservationsRouter = (await import("../routes/reservations")).default;
   app.use("/api/reservations", reservationsRouter);
+
+  app.get("/", (_req, res, next) => {
+    const manusIndexPath = getManusIndexPath();
+    if (!fs.existsSync(manusIndexPath)) {
+      next();
+      return;
+    }
+    res.sendFile(manusIndexPath);
+  });
 
   app.use(
     "/api/trpc",

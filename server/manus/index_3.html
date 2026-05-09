@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Family Car Share</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:    #0d1b2e;
+  --navy2:   #142236;
+  --navy3:   #1c2f48;
+  --navy4:   #243a59;
+  --silver:  #b8c4d0;
+  --silver2: #d4dde6;
+  --gold:    #c8a96e;
+  --gold2:   #dfc08a;
+  --gold3:   #eddaa8;
+  --white:   #f5f7fa;
+  --lexus:   #4a9eed;
+  --alphard: #e07b4f;
+  --purple:  #9b6ec8;
+  --radius:  12px;
+  --radius-sm: 8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--navy);color:var(--white);font-family:'Noto Sans JP',sans-serif;}
+.app{display:flex;flex-direction:column;height:100dvh;max-width:430px;margin:0 auto;background:var(--navy);position:relative;overflow:hidden;}
+
+/* HEADER */
+.header{flex-shrink:0;padding:52px 20px 14px;background:linear-gradient(180deg,var(--navy2) 0%,var(--navy) 100%);border-bottom:1px solid rgba(200,169,110,.2);}
+.header-top{display:flex;align-items:center;justify-content:space-between;}
+.logo{font-family:'Cormorant Garamond',serif;font-size:22px;letter-spacing:2px;color:var(--gold);}
+.logo span{font-style:italic;color:var(--gold2);}
+.month-nav{display:flex;align-items:center;gap:12px;}
+.month-nav button{background:none;border:none;color:var(--silver);font-size:18px;cursor:pointer;padding:4px 8px;opacity:.7;}
+.month-label{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:500;letter-spacing:1px;color:var(--silver2);min-width:96px;text-align:center;}
+
+/* LEGEND */
+.cal-legend{display:flex;gap:10px;padding:6px 16px 0;flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:4px;font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:.3px;color:var(--silver);opacity:.7;}
+.leg-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.leg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+/* CALENDAR */
+.calendar-wrap{flex-shrink:0;padding:4px 16px 8px;}
+.dow-row{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-bottom:4px;}
+.dow-row span{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:500;letter-spacing:.5px;color:var(--silver);padding:4px 0;}
+.dow-row span:first-child{color:#e07070;}
+.dow-row span:last-child{color:#70a0e0;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:var(--radius-sm);cursor:pointer;position:relative;transition:background .15s;min-height:40px;}
+.cal-day:active{transform:scale(.93);}
+.cal-day .day-num{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:400;color:var(--silver2);line-height:1;margin-bottom:2px;}
+.cal-day.other-month{opacity:.3;pointer-events:none;}
+.cal-day.other-month .day-num{color:var(--navy4);}
+.cal-day.today .day-num{color:var(--gold);font-weight:500;}
+.cal-day.today{background:var(--navy3);}
+.cal-day.sun .day-num{color:#e07070;}
+.cal-day.sat .day-num{color:#70a0e0;}
+.cal-day.selected{outline:1.5px solid var(--gold);}
+
+/* カレンダー 4状態 */
+/* 1) 全日予約（lexus） */
+.cal-day.allday-lexus{background:rgba(74,158,237,.18);}
+/* 2) 全日予約（alphard） */
+.cal-day.allday-alphard{background:rgba(224,123,79,.18);}
+/* 3) 両車全日 → グレーアウト */
+.cal-day.allday-both{background:rgba(180,190,200,.1);opacity:.4;cursor:not-allowed;}
+/* 4) 両車とも時間帯混雑（まだ空きコマあり） → パープル */
+.cal-day.timeslot-busy{background:rgba(155,110,200,.14);}
+
+.dot-row{display:flex;gap:2px;margin-top:1px;}
+.dot{width:4px;height:4px;flex-shrink:0;}
+.dot.lexus{background:var(--lexus);}
+.dot.alphard{background:var(--alphard);}
+/* 全日=■(border-radius:1px) 時間指定=●(border-radius:50%) */
+.dot.allday{border-radius:1px;}
+.dot.timeslot{border-radius:50%;}
+
+/* TABS */
+.tabs{flex-shrink:0;display:flex;padding:8px 16px 0;gap:4px;border-bottom:1px solid rgba(255,255,255,.06);}
+.tab{flex:1;background:none;border:none;cursor:pointer;padding:8px 4px 10px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--silver);opacity:.5;position:relative;transition:opacity .15s;}
+.tab.active{opacity:1;color:var(--gold);}
+.tab.active::after{content:'';position:absolute;bottom:0;left:10%;width:80%;height:2px;background:var(--gold);border-radius:2px;}
+
+/* PANEL */
+.panel{flex:1;overflow-y:auto;padding:16px;display:none;}
+.panel.active{display:block;}
+.panel::-webkit-scrollbar{width:3px;}
+.panel::-webkit-scrollbar-thumb{background:var(--navy4);border-radius:2px;}
+
+/* FLEET */
+.fleet-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.car-card{background:var(--navy2);border-radius:var(--radius);padding:14px;border:1px solid rgba(200,169,110,.15);overflow:hidden;cursor:pointer;transition:border-color .2s;}
+.car-card:active{border-color:var(--gold);}
+.car-label{font-family:'Cormorant Garamond',serif;font-size:11px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:4px;}
+.car-name{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:500;color:var(--white);margin-bottom:10px;}
+.car-svg{width:100%;display:block;}
+.car-status{margin-top:8px;font-size:10px;font-family:'Montserrat',sans-serif;letter-spacing:.5px;}
+.car-status.free{color:#5fc87a;}
+.car-status.busy{color:var(--gold);}
+.car-status::before{content:'● ';font-size:8px;}
+
+/* RES LIST */
+.res-group-title{font-size:10px;letter-spacing:1.5px;font-family:'Montserrat',sans-serif;color:var(--silver);opacity:.5;text-transform:uppercase;margin:0 0 10px;}
+.res-item{background:var(--navy2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--navy4);display:flex;align-items:center;gap:12px;}
+.res-item.lexus-item{border-left-color:var(--lexus);}
+.res-item.alphard-item{border-left-color:var(--alphard);}
+.res-item-info{flex:1;}
+.res-item-car{font-size:10px;font-family:'Montserrat',sans-serif;letter-spacing:.5px;color:var(--silver);margin-bottom:3px;}
+.res-item-who{font-size:14px;font-weight:500;color:var(--white);margin-bottom:2px;}
+.res-item-time{font-size:11px;color:var(--silver);font-family:'Montserrat',sans-serif;}
+.res-item-type{font-size:10px;font-family:'Montserrat',sans-serif;color:var(--gold3);letter-spacing:.5px;}
+.del-btn{background:none;border:1px solid rgba(255,255,255,.1);color:var(--silver);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,border-color .15s;}
+.del-btn:active{background:rgba(220,60,60,.2);border-color:#e07070;color:#e07070;}
+
+/* HISTORY */
+.hist-filter{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.filter-chip{padding:5px 12px;border-radius:20px;font-size:11px;font-family:'Montserrat',sans-serif;background:var(--navy3);border:1px solid rgba(255,255,255,.1);color:var(--silver);cursor:pointer;transition:all .15s;}
+.filter-chip.active{background:var(--navy4);border-color:var(--gold);color:var(--gold);}
+.hist-item{background:var(--navy2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+.hist-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.hist-dot.lexus{background:var(--lexus);}
+.hist-dot.alphard{background:var(--alphard);}
+.hist-info{flex:1;}
+.hist-date{font-size:11px;font-family:'Montserrat',sans-serif;color:var(--silver);margin-bottom:2px;}
+.hist-who{font-size:13px;color:var(--white);}
+
+/* FAB */
+.fab{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 80px);right:calc(50% - 215px + 16px);width:52px;height:52px;background:linear-gradient(135deg,var(--gold2),var(--gold));border-radius:50%;border:none;font-size:26px;color:var(--navy);cursor:pointer;box-shadow:0 4px 20px rgba(200,169,110,.4);display:flex;align-items:center;justify-content:center;transition:transform .15s;z-index:100;}
+.fab:active{transform:scale(.9);}
+@media(max-width:430px){.fab{right:16px;}}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;z-index:200;background:rgba(8,15,26,.88);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-bg.open{opacity:1;pointer-events:all;}
+.modal{width:100%;max-width:430px;background:var(--navy2);border-radius:20px 20px 0 0;border-top:1px solid rgba(200,169,110,.25);padding:20px 20px calc(env(safe-area-inset-bottom) + 24px);transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:92dvh;overflow-y:auto;}
+.modal-bg.open .modal{transform:translateY(0);}
+.modal-handle{width:36px;height:4px;background:var(--navy4);border-radius:2px;margin:0 auto 20px;}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold);margin-bottom:4px;}
+.modal-subtitle{font-size:11px;color:var(--silver);font-family:'Montserrat',sans-serif;letter-spacing:.5px;margin-bottom:16px;}
+.form-row{margin-bottom:14px;}
+.form-label{font-size:10px;letter-spacing:1px;font-family:'Montserrat',sans-serif;color:var(--silver);text-transform:uppercase;margin-bottom:6px;}
+.form-select,.form-input{width:100%;background:var(--navy3);border:1px solid rgba(255,255,255,.1);color:var(--white);font-family:'Noto Sans JP',sans-serif;font-size:14px;border-radius:var(--radius-sm);padding:10px 14px;outline:none;appearance:none;transition:border-color .15s;}
+.form-select:focus,.form-input:focus{border-color:rgba(200,169,110,.5);}
+option{background:var(--navy2);}
+.type-toggle{display:flex;gap:8px;}
+.type-btn{flex:1;padding:9px;background:var(--navy3);border:1px solid rgba(255,255,255,.1);color:var(--silver);font-family:'Noto Sans JP',sans-serif;font-size:13px;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;}
+.type-btn.active{background:var(--navy4);border-color:var(--gold);color:var(--gold);}
+.time-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.time-row.hidden{display:none;}
+.avail-row{display:flex;gap:8px;margin-bottom:14px;}
+.avail-badge{flex:1;border-radius:var(--radius-sm);padding:8px 10px;font-size:11px;font-family:'Montserrat',sans-serif;border:1px solid transparent;}
+.avail-badge .ab-car{font-size:9px;opacity:.7;margin-bottom:2px;}
+.avail-badge .ab-stat{font-weight:500;}
+.avail-badge.free{background:rgba(95,200,122,.1);border-color:rgba(95,200,122,.3);color:#5fc87a;}
+.avail-badge.busy{background:rgba(224,80,80,.1);border-color:rgba(224,80,80,.3);color:#e07070;}
+.avail-badge.warn{background:rgba(200,169,110,.1);border-color:rgba(200,169,110,.3);color:var(--gold2);}
+.conflict-block{background:rgba(224,80,80,.08);border:1px solid rgba(224,80,80,.25);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;display:none;}
+.conflict-block.show{display:block;}
+.conflict-block .cb-title{font-size:10px;font-family:'Montserrat',sans-serif;letter-spacing:.5px;color:#e07070;margin-bottom:6px;}
+.conflict-item{font-size:12px;color:var(--silver2);margin-bottom:2px;}
+.submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold2),var(--gold));border:none;border-radius:var(--radius);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:14px;font-weight:500;letter-spacing:1px;cursor:pointer;margin-top:8px;transition:opacity .15s;}
+.submit-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+/* DATE DETAIL SHEET */
+.sheet-bg{position:fixed;inset:0;z-index:150;background:rgba(8,15,26,.82);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.sheet-bg.open{opacity:1;pointer-events:all;}
+.sheet{width:100%;max-width:430px;background:var(--navy2);border-radius:20px 20px 0 0;border-top:1px solid rgba(200,169,110,.25);padding:20px 20px calc(env(safe-area-inset-bottom)+20px);transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:80dvh;overflow-y:auto;}
+.sheet-bg.open .sheet{transform:translateY(0);}
+.sheet-handle{width:36px;height:4px;background:var(--navy4);border-radius:2px;margin:0 auto 16px;}
+.sheet-title{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--gold);margin-bottom:2px;}
+.sheet-date{font-size:11px;font-family:'Montserrat',sans-serif;color:var(--silver);letter-spacing:.5px;margin-bottom:16px;}
+.sheet-section{font-size:10px;letter-spacing:1.5px;font-family:'Montserrat',sans-serif;color:var(--silver);opacity:.45;text-transform:uppercase;margin:12px 0 8px;}
+.sheet-res-item{display:flex;align-items:center;gap:10px;background:var(--navy3);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;}
+.sheet-res-bar{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;min-height:32px;}
+.sheet-res-info{flex:1;}
+.sheet-res-car{font-size:10px;font-family:'Montserrat',sans-serif;letter-spacing:.5px;margin-bottom:2px;}
+.sheet-res-who{font-size:13px;color:var(--white);font-weight:500;margin-bottom:1px;}
+.sheet-res-time{font-size:11px;font-family:'Montserrat',sans-serif;color:var(--silver);}
+.sheet-empty{text-align:center;padding:20px;color:var(--silver);opacity:.4;font-size:13px;}
+.sheet-add-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--gold2),var(--gold));border:none;border-radius:var(--radius);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:13px;font-weight:500;letter-spacing:1px;cursor:pointer;margin-top:14px;}
+.sheet-add-btn:active{opacity:.85;}
+.sheet-del-btn{background:none;border:1px solid rgba(255,255,255,.1);color:var(--silver);border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;}
+.sheet-del-btn:active{background:rgba(220,60,60,.2);border-color:#e07070;color:#e07070;}
+
+/* TOAST */
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--navy3);border:1px solid rgba(200,169,110,.4);color:var(--gold2);font-size:12px;font-family:'Noto Sans JP',sans-serif;padding:10px 20px;border-radius:20px;z-index:300;transition:transform .3s cubic-bezier(.32,.72,0,1),opacity .3s;white-space:nowrap;opacity:0;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.empty{text-align:center;padding:40px 20px;color:var(--silver);opacity:.4;}
+.empty-icon{font-size:32px;margin-bottom:8px;}
+.empty-text{font-size:13px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="logo">Family <span>Car Share</span></div>
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">‹</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="cal-legend">
+  <div class="leg-item"><div class="leg-swatch" style="background:rgba(74,158,237,.35)"></div>NX全日</div>
+  <div class="leg-item"><div class="leg-swatch" style="background:rgba(224,123,79,.35)"></div>ALP全日</div>
+  <div class="leg-item"><div class="leg-swatch" style="background:rgba(155,110,200,.3)"></div>時間混雑</div>
+  <div class="leg-item"><div style="width:5px;height:5px;border-radius:1px;background:var(--silver);flex-shrink:0;"></div>■全日</div>
+  <div class="leg-item"><div style="width:5px;height:5px;border-radius:50%;background:var(--silver);flex-shrink:0;"></div>●時間</div>
+</div>
+
+<!-- CALENDAR -->
+<div class="calendar-wrap">
+  <div class="dow-row">
+    <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('fleet',this)">Fleet</button>
+  <button class="tab" onclick="switchTab('reservations',this)">予約一覧</button>
+  <button class="tab" onclick="switchTab('history',this)">履歴</button>
+</div>
+
+<!-- FLEET PANEL -->
+<div class="panel active" id="panel-fleet">
+  <div class="fleet-grid">
+
+    <!-- LEXUS NX — クロスオーバーSUV：低いルーフ、傾斜したウィンドウ、スピンドルグリル -->
+    <div class="car-card" onclick="openModal('LEXUS NX')">
+      <div class="car-label">Luxury SUV</div>
+      <div class="car-name">LEXUS NX</div>
+      <svg class="car-svg" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- 影 -->
+        <ellipse cx="101" cy="92" rx="80" ry="4" fill="rgba(0,0,0,.35)"/>
+        <!-- ボディ下部パネル -->
+        <path d="M26 62 L26 57 Q26 55 28 55 L174 55 Q176 55 176 57 L176 62 Z" fill="rgba(74,158,237,.1)" stroke="rgba(74,158,237,.35)" stroke-width=".7"/>
+        <!-- サイドシル -->
+        <rect x="35" y="62" width="130" height="5" rx="1" fill="rgba(74,158,237,.2)"/>
+        <!-- メインボディ：SUVらしい低くスポーティなプロファイル -->
+        <!-- フロント：緩やかに傾斜したノーズ、高めのボンネット -->
+        <!-- キャビン：前寄り、リアに向かって絞り込むクーペライク -->
+        <path d="
+          M28 55
+          L28 46 Q28 43 30 42
+          L52 34 Q58 26 68 22
+          L115 20 Q128 20 138 24
+          L158 32 Q168 38 172 46
+          L174 52 L176 55 Z"
+          fill="rgba(74,158,237,.14)" stroke="rgba(74,158,237,.5)" stroke-width="1.1"/>
+        <!-- ルーフグラスエリア：大きく傾斜したフロントガラス、絞り込まれたリア -->
+        <path d="M56 34 Q64 21 72 19 L113 19 Q126 19 136 25 L154 34 Z"
+          fill="rgba(74,158,237,.2)" stroke="rgba(74,158,237,.45)" stroke-width=".7"/>
+        <!-- Aピラー（急角度） -->
+        <line x1="57" y1="34" x2="70" y2="19" stroke="rgba(74,158,237,.55)" stroke-width=".9"/>
+        <!-- Cピラー（クーペライクな傾斜） -->
+        <line x1="136" y1="25" x2="153" y2="36" stroke="rgba(74,158,237,.55)" stroke-width=".9"/>
+        <!-- Bピラー -->
+        <line x1="107" y1="19" x2="109" y2="34" stroke="rgba(74,158,237,.4)" stroke-width=".7"/>
+        <!-- 前席ガラス -->
+        <path d="M70 19 L107 19 L109 34 L58 34 Z" fill="rgba(100,180,255,.07)" stroke="rgba(74,158,237,.25)" stroke-width=".4"/>
+        <!-- 後席ガラス（クーペライクで小さめ） -->
+        <path d="M109 19 L134 23 L152 34 L109 34 Z" fill="rgba(100,180,255,.07)" stroke="rgba(74,158,237,.25)" stroke-width=".4"/>
+        <!-- フロントフェンダーのキャラクターライン -->
+        <path d="M152 38 Q162 40 170 46" stroke="rgba(74,158,237,.35)" stroke-width=".6" fill="none"/>
+        <!-- スピンドルグリル（レクサスのシグネチャー菱形） -->
+        <path d="M163 43 L174 46 L168 53 L157 50 Z" fill="rgba(200,169,110,.1)" stroke="rgba(200,169,110,.55)" stroke-width=".8"/>
+        <line x1="163" y1="43" x2="168" y2="53" stroke="rgba(200,169,110,.4)" stroke-width=".5"/>
+        <line x1="174" y1="46" x2="157" y2="50" stroke="rgba(200,169,110,.35)" stroke-width=".4"/>
+        <!-- ヘッドライト（鋭角のL字DRL） -->
+        <path d="M166 38 L176 41 L176 48 L169 47 L166 44 Z" fill="rgba(255,255,210,.2)" stroke="rgba(74,158,237,.4)" stroke-width=".7"/>
+        <!-- DRLライン -->
+        <line x1="167" y1="39" x2="176" y2="42" stroke="rgba(255,255,230,.7)" stroke-width=".9"/>
+        <!-- テールランプ（L字形） -->
+        <path d="M26 42 L28 42 L28 55 L26 55 Z" fill="rgba(255,50,50,.3)" stroke="rgba(255,70,70,.5)" stroke-width=".5"/>
+        <path d="M26 55 L34 55 L34 57 L26 57 Z" fill="rgba(255,50,50,.2)"/>
+        <!-- ホイールアーチ（前） -->
+        <path d="M137 55 Q137 44 150 44 Q163 44 163 55 Z" fill="var(--navy2)"/>
+        <!-- ホイールアーチ（後） -->
+        <path d="M37 55 Q37 44 50 44 Q63 44 63 55 Z" fill="var(--navy2)"/>
+        <!-- 前輪（18インチ風・マルチスポーク） -->
+        <circle cx="150" cy="68" r="13" fill="rgba(18,32,52,1)" stroke="rgba(74,158,237,.55)" stroke-width="1.2"/>
+        <circle cx="150" cy="68" r="9" fill="none" stroke="rgba(74,158,237,.3)" stroke-width=".6"/>
+        <circle cx="150" cy="68" r="3.5" fill="rgba(74,158,237,.6)"/>
+        <!-- スポーク 5本 -->
+        <line x1="150" y1="59" x2="150" y2="77" stroke="rgba(74,158,237,.4)" stroke-width=".8"/>
+        <line x1="141" y1="65" x2="159" y2="71" stroke="rgba(74,158,237,.4)" stroke-width=".8"/>
+        <line x1="144" y1="60" x2="156" y2="76" stroke="rgba(74,158,237,.3)" stroke-width=".7"/>
+        <line x1="141" y1="71" x2="159" y2="65" stroke="rgba(74,158,237,.3)" stroke-width=".7"/>
+        <line x1="144" y1="76" x2="156" y2="60" stroke="rgba(74,158,237,.25)" stroke-width=".6"/>
+        <!-- 後輪 -->
+        <circle cx="50" cy="68" r="13" fill="rgba(18,32,52,1)" stroke="rgba(74,158,237,.55)" stroke-width="1.2"/>
+        <circle cx="50" cy="68" r="9" fill="none" stroke="rgba(74,158,237,.3)" stroke-width=".6"/>
+        <circle cx="50" cy="68" r="3.5" fill="rgba(74,158,237,.6)"/>
+        <line x1="50" y1="59" x2="50" y2="77" stroke="rgba(74,158,237,.4)" stroke-width=".8"/>
+        <line x1="41" y1="65" x2="59" y2="71" stroke="rgba(74,158,237,.4)" stroke-width=".8"/>
+        <line x1="44" y1="60" x2="56" y2="76" stroke="rgba(74,158,237,.3)" stroke-width=".7"/>
+        <line x1="41" y1="71" x2="59" y2="65" stroke="rgba(74,158,237,.3)" stroke-width=".7"/>
+        <line x1="44" y1="76" x2="56" y2="60" stroke="rgba(74,158,237,.25)" stroke-width=".6"/>
+        <!-- ショルダーライン -->
+        <path d="M28 47 Q90 43 164 45" stroke="rgba(74,158,237,.28)" stroke-width=".6" fill="none"/>
+      </svg>
+      <div class="car-status free" id="lexus-status">Available</div>
+    </div>
+
+    <!-- ALPHARD — ラグジュアリーミニバン：縦長キャビン、フラットルーフ、ワイドフロントマスク -->
+    <div class="car-card" onclick="openModal('ALPHARD')">
+      <div class="car-label">Premium Van</div>
+      <div class="car-name">ALPHARD</div>
+      <svg class="car-svg" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- 影 -->
+        <ellipse cx="100" cy="92" rx="78" ry="4" fill="rgba(0,0,0,.35)"/>
+        <!-- ミニバン：ボディは高く・短く・箱型。リアは垂直に近い -->
+        <!-- サイドシル（幅広） -->
+        <rect x="32" y="62" width="136" height="5" rx="1" fill="rgba(224,123,79,.22)"/>
+        <!-- メインボディ -->
+        <!-- 特徴：高いルーフ(y=16)、ほぼ垂直なフロントウィンドウ、ほぼ垂直なリア -->
+        <!-- フロントノーズは短く、ほぼキャビン直結 -->
+        <path d="
+          M30 62
+          L30 22 Q30 16 36 16
+          L154 16 Q162 16 164 22
+          L168 34 L170 48 L172 62 Z"
+          fill="rgba(224,123,79,.13)" stroke="rgba(224,123,79,.52)" stroke-width="1.1"/>
+        <!-- フラットルーフ（アルファードの最大の特徴） -->
+        <line x1="36" y1="16" x2="154" y2="16" stroke="rgba(224,123,79,.55)" stroke-width="1.1"/>
+        <!-- ルーフエッジのクロームモール -->
+        <line x1="36" y1="16" x2="154" y2="16" stroke="rgba(200,169,110,.4)" stroke-width=".5" stroke-dasharray="3 2"/>
+        <!-- フロントウィンドウ（ほぼ垂直、大きい） -->
+        <!-- アルファードのフロントガラスは後傾が緩く、背が高い -->
+        <path d="M154 16 Q161 17 164 22 L168 36 L154 36 Z"
+          fill="rgba(224,123,79,.12)" stroke="rgba(224,123,79,.38)" stroke-width=".7"/>
+        <!-- リアガラス（垂直気味） -->
+        <path d="M30 18 L36 18 L36 38 L30 38 Z"
+          fill="rgba(224,123,79,.1)" stroke="rgba(224,123,79,.32)" stroke-width=".6"/>
+        <!-- サイドウィンドウ 3枚（縦長・アルファードらしい大きさ） -->
+        <!-- 後部ドアガラス（大きい） -->
+        <rect x="38" y="20" width="34" height="30" rx="2"
+          fill="rgba(224,123,79,.09)" stroke="rgba(224,123,79,.32)" stroke-width=".7"/>
+        <!-- 中央ドアガラス -->
+        <rect x="76" y="20" width="34" height="30" rx="2"
+          fill="rgba(224,123,79,.09)" stroke="rgba(224,123,79,.32)" stroke-width=".7"/>
+        <!-- 前席ガラス（やや小さめ） -->
+        <rect x="114" y="20" width="36" height="30" rx="2"
+          fill="rgba(224,123,79,.09)" stroke="rgba(224,123,79,.32)" stroke-width=".7"/>
+        <!-- ピラー（太め・縦線） -->
+        <line x1="38" y1="16" x2="38" y2="62" stroke="rgba(224,123,79,.3)" stroke-width=".9"/>
+        <line x1="74" y1="16" x2="74" y2="62" stroke="rgba(224,123,79,.22)" stroke-width=".7"/>
+        <line x1="112" y1="16" x2="112" y2="62" stroke="rgba(224,123,79,.22)" stroke-width=".7"/>
+        <line x1="152" y1="16" x2="152" y2="62" stroke="rgba(224,123,79,.3)" stroke-width=".9"/>
+        <!-- スライドドアレール（ミニバンの特徴） -->
+        <line x1="38" y1="50" x2="152" y2="50" stroke="rgba(224,123,79,.18)" stroke-width=".5" stroke-dasharray="4 2"/>
+        <!-- アルファードフロントマスク：幅広クロームバー＋大型グリル -->
+        <!-- グリル枠 -->
+        <rect x="156" y="34" width="14" height="22" rx="1"
+          fill="rgba(200,169,110,.08)" stroke="rgba(200,169,110,.45)" stroke-width=".8"/>
+        <!-- クロームバー 4本（アルファードのシグネチャー） -->
+        <line x1="157" y1="38" x2="169" y2="38" stroke="rgba(200,169,110,.65)" stroke-width=".8"/>
+        <line x1="157" y1="42" x2="169" y2="42" stroke="rgba(200,169,110,.55)" stroke-width=".7"/>
+        <line x1="157" y1="46" x2="169" y2="46" stroke="rgba(200,169,110,.45)" stroke-width=".6"/>
+        <line x1="157" y1="50" x2="169" y2="50" stroke="rgba(200,169,110,.35)" stroke-width=".5"/>
+        <!-- ヘッドライト（幅広・3眼風） -->
+        <path d="M152 20 L170 22 L170 34 L154 33 Z"
+          fill="rgba(255,255,210,.18)" stroke="rgba(224,123,79,.38)" stroke-width=".7"/>
+        <!-- ヘッドライト内部ライン（3眼） -->
+        <line x1="158" y1="21" x2="158" y2="33" stroke="rgba(224,123,79,.25)" stroke-width=".5"/>
+        <line x1="163" y1="21.5" x2="163" y2="33" stroke="rgba(224,123,79,.2)" stroke-width=".4"/>
+        <!-- DRLライン（幅広） -->
+        <line x1="153" y1="21" x2="170" y2="23" stroke="rgba(255,255,230,.6)" stroke-width=".9"/>
+        <!-- テールランプ（縦長・フルハイト） -->
+        <rect x="28" y="22" width="4" height="32" rx="1"
+          fill="rgba(255,50,50,.22)" stroke="rgba(255,70,70,.42)" stroke-width=".6"/>
+        <rect x="28" y="56" width="14" height="4" rx="1" fill="rgba(255,50,50,.18)"/>
+        <!-- ホイールアーチ（丸みあり・ミニバン） -->
+        <path d="M138 62 Q138 50 151 50 Q164 50 164 62 Z" fill="var(--navy2)"/>
+        <path d="M36 62 Q36 50 49 50 Q62 50 62 62 Z" fill="var(--navy2)"/>
+        <!-- 前輪（大径・ロープロ風） -->
+        <circle cx="151" cy="72" r="14" fill="rgba(16,28,46,1)" stroke="rgba(224,123,79,.55)" stroke-width="1.2"/>
+        <circle cx="151" cy="72" r="10" fill="none" stroke="rgba(224,123,79,.28)" stroke-width=".6"/>
+        <circle cx="151" cy="72" r="4" fill="rgba(224,123,79,.6)"/>
+        <!-- スポーク 5本 -->
+        <line x1="151" y1="62" x2="151" y2="82" stroke="rgba(224,123,79,.38)" stroke-width=".8"/>
+        <line x1="141" y1="68" x2="161" y2="76" stroke="rgba(224,123,79,.38)" stroke-width=".8"/>
+        <line x1="144" y1="63" x2="158" y2="81" stroke="rgba(224,123,79,.28)" stroke-width=".7"/>
+        <line x1="141" y1="76" x2="161" y2="68" stroke="rgba(224,123,79,.28)" stroke-width=".7"/>
+        <line x1="144" y1="81" x2="158" y2="63" stroke="rgba(224,123,79,.22)" stroke-width=".6"/>
+        <!-- 後輪 -->
+        <circle cx="49" cy="72" r="14" fill="rgba(16,28,46,1)" stroke="rgba(224,123,79,.55)" stroke-width="1.2"/>
+        <circle cx="49" cy="72" r="10" fill="none" stroke="rgba(224,123,79,.28)" stroke-width=".6"/>
+        <circle cx="49" cy="72" r="4" fill="rgba(224,123,79,.6)"/>
+        <line x1="49" y1="62" x2="49" y2="82" stroke="rgba(224,123,79,.38)" stroke-width=".8"/>
+        <line x1="39" y1="68" x2="59" y2="76" stroke="rgba(224,123,79,.38)" stroke-width=".8"/>
+        <line x1="42" y1="63" x2="56" y2="81" stroke="rgba(224,123,79,.28)" stroke-width=".7"/>
+        <line x1="39" y1="76" x2="59" y2="68" stroke="rgba(224,123,79,.28)" stroke-width=".7"/>
+        <line x1="42" y1="81" x2="56" y2="63" stroke="rgba(224,123,79,.22)" stroke-width=".6"/>
+        <!-- ベルトライン（ミニバンは高め水平） -->
+        <path d="M32 38 L152 38" stroke="rgba(224,123,79,.22)" stroke-width=".5" fill="none"/>
+      </svg>
+      <div class="car-status free" id="alphard-status">Available</div>
+    </div>
+  </div>
+
+  <!-- TODAY SUMMARY -->
+  <div style="background:var(--navy2);border-radius:var(--radius);padding:14px 16px;border:1px solid rgba(200,169,110,.12);">
+    <div style="font-size:10px;letter-spacing:1.5px;font-family:'Montserrat',sans-serif;color:var(--silver);opacity:.5;margin-bottom:10px;">TODAY'S SCHEDULE</div>
+    <div id="todaySummary"><div style="color:var(--silver);font-size:12px;opacity:.5;">予約なし</div></div>
+  </div>
+</div>
+
+<!-- RESERVATIONS PANEL -->
+<div class="panel" id="panel-reservations">
+  <div class="res-group-title">UPCOMING</div>
+  <div id="resList"></div>
+</div>
+
+<!-- HISTORY PANEL -->
+<div class="panel" id="panel-history">
+  <div class="hist-filter">
+    <div class="filter-chip active" onclick="filterHist('all',this)">すべて</div>
+    <div class="filter-chip" onclick="filterHist('LEXUS NX',this)">LEXUS NX</div>
+    <div class="filter-chip" onclick="filterHist('ALPHARD',this)">ALPHARD</div>
+    <div class="filter-chip" onclick="filterHist('高瀬健吾',this)">健吾</div>
+    <div class="filter-chip" onclick="filterHist('高瀬まどか',this)">まどか</div>
+  </div>
+  <div id="histList"></div>
+</div>
+
+<!-- DATE DETAIL SHEET（日付タップで表示） -->
+<div class="sheet-bg" id="sheetBg" onclick="closeSheet(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetTitle">予約状況</div>
+    <div class="sheet-date" id="sheetDate"></div>
+    <div class="sheet-section">LEXUS NX</div>
+    <div id="sheetLexus"></div>
+    <div class="sheet-section">ALPHARD</div>
+    <div id="sheetAlphard"></div>
+    <button class="sheet-add-btn" id="sheetAddBtn" onclick="openModalFromSheet()">＋ この日に予約を追加</button>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="openModal(null)" title="新規予約">＋</button>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">New Reservation</div>
+    <div class="modal-subtitle" id="modalSubtitle">日付を選択して予約を作成</div>
+
+    <div class="avail-row">
+      <div class="avail-badge free" id="availLexus">
+        <div class="ab-car">LEXUS NX</div>
+        <div class="ab-stat">空き</div>
+      </div>
+      <div class="avail-badge free" id="availAlphard">
+        <div class="ab-car">ALPHARD</div>
+        <div class="ab-stat">空き</div>
+      </div>
+    </div>
+
+    <div class="conflict-block" id="conflictBlock">
+      <div class="cb-title">⚠ CONFLICT — 予約できません</div>
+      <div id="conflictList"></div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-label">車両</div>
+      <select class="form-select" id="fVehicle" onchange="checkAvailability()">
+        <option value="LEXUS NX">LEXUS NX</option>
+        <option value="ALPHARD">ALPHARD</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-label">利用者</div>
+      <select class="form-select" id="fUser">
+        <option>高瀬健吾</option>
+        <option>高瀬まどか</option>
+        <option>高瀬健一郎</option>
+        <option>高瀬英太郎</option>
+        <option>高瀬光太郎</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-label">予約タイプ</div>
+      <div class="type-toggle">
+        <button class="type-btn active" onclick="setType('all_day',this)">全日</button>
+        <button class="type-btn" onclick="setType('time_range',this)">時間指定</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-label">日付</div>
+      <input type="date" class="form-input" id="fDate" onchange="checkAvailability()">
+    </div>
+    <div class="form-row time-row hidden" id="timeRow">
+      <div>
+        <div class="form-label">開始</div>
+        <input type="time" class="form-input" id="fStart" value="09:00" onchange="checkAvailability()">
+      </div>
+      <div>
+        <div class="form-label">終了</div>
+        <input type="time" class="form-input" id="fEnd" value="18:00" onchange="checkAvailability()">
+      </div>
+    </div>
+    <button class="submit-btn" id="submitBtn" onclick="submitReservation()">予約を確定する</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ── STATE ──
+const today = new Date();
+let currentYear  = today.getFullYear();
+let currentMonth = today.getMonth();
+let selectedDate = null;
+let resType = 'all_day';
+let histFilter = 'all';
+const pad = n => String(n).padStart(2,'0');
+const todayStr = () => `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+
+const Y = today.getFullYear(), M = pad(today.getMonth()+1);
+let reservations = [];
+let nextId = 10;
+
+// ── 時間変換 ──
+const toMin = t => { if (!t) return 0; const [h,m]=t.split(':').map(Number); return h*60+m; };
+
+// ── 競合チェック ──
+function getConflicts(vehicle, date, type, start, end) {
+  return reservations.filter(r => {
+    if (r.vehicle !== vehicle || r.date !== date) return false;
+    if (r.type === 'all_day' || type === 'all_day') return true;
+    return toMin(start) < toMin(r.end) && toMin(end) > toMin(r.start);
+  });
+}
+
+// ── カレンダー日付の状態分類 ──
+function getDayState(date) {
+  const lexusRes   = reservations.filter(r => r.vehicle==='LEXUS NX' && r.date===date);
+  const alphardRes = reservations.filter(r => r.vehicle==='ALPHARD'  && r.date===date);
+  const lexusAllDay   = lexusRes.some(r => r.type==='all_day');
+  const alphardAllDay = alphardRes.some(r => r.type==='all_day');
+  if (lexusAllDay && alphardAllDay) return 'allday-both';
+  if (lexusAllDay)   return 'allday-lexus';
+  if (alphardAllDay) return 'allday-alphard';
+  if (lexusRes.length > 0 && alphardRes.length > 0) return 'timeslot-busy';
+  return 'normal';
+}
+
+// ── カレンダー描画 ──
+function renderCalendar() {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('monthLabel').textContent = `${months[currentMonth]} ${currentYear}`;
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const first    = new Date(currentYear, currentMonth, 1).getDay();
+  const days     = new Date(currentYear, currentMonth+1, 0).getDate();
+  const prevDays = new Date(currentYear, currentMonth, 0).getDate();
+  for (let i=0; i<first; i++) makeCell(prevDays-first+1+i, currentMonth-1, true, grid);
+  for (let d=1; d<=days; d++) makeCell(d, currentMonth, false, grid);
+  const rest = 42-first-days;
+  for (let i=1; i<=rest; i++) makeCell(i, currentMonth+1, true, grid);
+  updateFleetStatus();
+  updateTodaySummary();
+}
+
+function makeCell(d, month, other, grid) {
+  const rm = ((month%12)+12)%12;
+  const ry = currentYear + Math.floor(month/12);
+  const dateStr = `${ry}-${pad(rm+1)}-${pad(d)}`;
+  const dow = new Date(ry, rm, d).getDay();
+  const el = document.createElement('div');
+  el.className = 'cal-day';
+  if (other) { el.classList.add('other-month'); grid.appendChild(el); const n=document.createElement('div'); n.className='day-num'; n.textContent=d; el.appendChild(n); return; }
+  if (dow===0) el.classList.add('sun');
+  if (dow===6) el.classList.add('sat');
+  const isToday = d===today.getDate() && rm===today.getMonth() && ry===today.getFullYear();
+  if (isToday) el.classList.add('today');
+  if (selectedDate===dateStr) el.classList.add('selected');
+
+  const state = getDayState(dateStr);
+  if (state==='allday-both') {
+    el.classList.add('allday-both');
+  } else if (state==='allday-lexus') {
+    el.classList.add('allday-lexus');
+  } else if (state==='allday-alphard') {
+    el.classList.add('allday-alphard');
+  } else if (state==='timeslot-busy') {
+    el.classList.add('timeslot-busy');
+  }
+
+  const numDiv = document.createElement('div');
+  numDiv.className = 'day-num';
+  numDiv.textContent = d;
+  el.appendChild(numDiv);
+
+  if (state !== 'allday-both') {
+    const dayRes = reservations.filter(r => r.date===dateStr);
+    const hasAlldayL = dayRes.some(r=>r.vehicle==='LEXUS NX'&&r.type==='all_day');
+    const hasAlldayA = dayRes.some(r=>r.vehicle==='ALPHARD' &&r.type==='all_day');
+    const hasTimeL   = dayRes.some(r=>r.vehicle==='LEXUS NX'&&r.type==='time_range');
+    const hasTimeA   = dayRes.some(r=>r.vehicle==='ALPHARD' &&r.type==='time_range');
+    if (hasAlldayL||hasAlldayA||hasTimeL||hasTimeA) {
+      const dr = document.createElement('div'); dr.className='dot-row';
+      if (hasAlldayL){ const d2=document.createElement('div'); d2.className='dot lexus allday';     dr.appendChild(d2); }
+      if (hasAlldayA){ const d2=document.createElement('div'); d2.className='dot alphard allday';   dr.appendChild(d2); }
+      if (hasTimeL)  { const d2=document.createElement('div'); d2.className='dot lexus timeslot';   dr.appendChild(d2); }
+      if (hasTimeA)  { const d2=document.createElement('div'); d2.className='dot alphard timeslot'; dr.appendChild(d2); }
+      el.appendChild(dr);
+    }
+  }
+
+  el.onclick = () => { selectedDate=dateStr; renderCalendar(); openSheet(dateStr); };
+  grid.appendChild(el);
+}
+
+function changeMonth(dir) {
+  currentMonth+=dir;
+  if (currentMonth>11){currentMonth=0;currentYear++;}
+  if (currentMonth<0) {currentMonth=11;currentYear--;}
+  renderCalendar(); renderResList(); renderHistList();
+}
+
+// ── FLEET STATUS ──
+function updateFleetStatus() {
+  const td = todayStr();
+  ['LEXUS NX','ALPHARD'].forEach(v=>{
+    const busy = reservations.some(r=>r.vehicle===v&&r.date===td);
+    const el = document.getElementById(v==='LEXUS NX'?'lexus-status':'alphard-status');
+    if (!el) return;
+    el.className='car-status '+(busy?'busy':'free');
+    el.textContent=busy?'In Use':'Available';
+  });
+}
+function updateTodaySummary() {
+  const td=todayStr();
+  const list=reservations.filter(r=>r.date===td);
+  const box=document.getElementById('todaySummary');
+  if (!box) return;
+  if (!list.length){box.innerHTML='<div style="color:var(--silver);font-size:12px;opacity:.5;">予約なし</div>';return;}
+  box.innerHTML=list.map(r=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <div style="width:3px;height:32px;border-radius:2px;background:${r.vehicle==='LEXUS NX'?'var(--lexus)':'var(--alphard)'};flex-shrink:0;"></div>
+      <div>
+        <div style="font-size:11px;font-family:'Montserrat',sans-serif;color:var(--silver);margin-bottom:1px;">${r.vehicle}</div>
+        <div style="font-size:13px;color:var(--white);">${r.user}</div>
+        <div style="font-size:11px;font-family:'Montserrat',sans-serif;color:var(--gold3);">${r.type==='all_day'?'終日':r.start+' – '+r.end}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── RESERVATION LIST ──
+function renderResList() {
+  const list=document.getElementById('resList');
+  const sorted=[...reservations].sort((a,b)=>a.date>b.date?1:-1);
+  if (!sorted.length){list.innerHTML='<div class="empty"><div class="empty-icon">🚗</div><div class="empty-text">予約がありません</div></div>';return;}
+  list.innerHTML=sorted.map(r=>`
+    <div class="res-item ${r.vehicle==='LEXUS NX'?'lexus-item':'alphard-item'}">
+      <div class="res-item-info">
+        <div class="res-item-car">${r.vehicle}</div>
+        <div class="res-item-who">${r.user}</div>
+        <div class="res-item-time">${formatDate(r.date)}</div>
+        <div class="res-item-type">${r.type==='all_day'?'終日':r.start+' – '+r.end}</div>
+      </div>
+      <button class="del-btn" onclick="deleteRes('${r.id}')">✕</button>
+    </div>`).join('');
+}
+async function deleteRes(id){ const _dr=await fetch('/api/reservations/'+id,{method:'DELETE'}); if(!_dr.ok){showToast('削除失敗');return;}
+  reservations=reservations.filter(r=>r.id!==id);
+  renderResList();renderHistList();renderCalendar();
+  showToast('予約を削除しました');
+}
+
+// ── HISTORY ──
+function renderHistList(){
+  const list=document.getElementById('histList');
+  let data=[...reservations].sort((a,b)=>a.date>b.date?-1:1);
+  if (histFilter!=='all') data=data.filter(r=>r.vehicle===histFilter||r.user===histFilter);
+  if (!data.length){list.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">履歴がありません</div></div>';return;}
+  list.innerHTML=data.map(r=>`
+    <div class="hist-item">
+      <div class="hist-dot ${r.vehicle==='LEXUS NX'?'lexus':'alphard'}"></div>
+      <div class="hist-info">
+        <div class="hist-date">${formatDate(r.date)} · ${r.type==='all_day'?'終日':r.start+' – '+r.end}</div>
+        <div class="hist-who">${r.user}</div>
+      </div>
+      <div style="font-size:10px;font-family:'Montserrat',sans-serif;color:${r.vehicle==='LEXUS NX'?'var(--lexus)':'var(--alphard)'};">${r.vehicle==='LEXUS NX'?'NX':'ALP'}</div>
+    </div>`).join('');
+}
+function filterHist(val,el){
+  histFilter=val;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');renderHistList();
+}
+
+// ── DATE DETAIL SHEET ──
+function openSheet(date) {
+  document.getElementById('sheetBg').classList.add('open');
+  document.getElementById('sheetTitle').textContent = formatDate(date) + ' の予約状況';
+  document.getElementById('sheetDate').textContent = '';
+
+  const btn = document.getElementById('sheetAddBtn');
+  const allBlocked = isAllBlocked(date);
+  btn.disabled = allBlocked;
+  btn.style.opacity = allBlocked ? '.35' : '1';
+  btn.style.cursor  = allBlocked ? 'not-allowed' : 'pointer';
+  btn.textContent   = allBlocked ? '両車とも全日予約済み — 追加不可' : '＋ この日に予約を追加';
+
+  ['LEXUS NX','ALPHARD'].forEach(v => {
+    const elId = v==='LEXUS NX' ? 'sheetLexus' : 'sheetAlphard';
+    const el = document.getElementById(elId);
+    const res = reservations.filter(r=>r.vehicle===v && r.date===date)
+                            .sort((a,b)=> a.type==='all_day' ? -1 : toMin(a.start)-toMin(b.start));
+    if (!res.length) {
+      el.innerHTML=`<div class="sheet-empty">空き</div>`;
+      return;
+    }
+    el.innerHTML = res.map(r=>`
+      <div class="sheet-res-item">
+        <div class="sheet-res-bar" style="background:${v==='LEXUS NX'?'var(--lexus)':'var(--alphard)'}"></div>
+        <div class="sheet-res-info">
+          <div class="sheet-res-car" style="color:${v==='LEXUS NX'?'var(--lexus)':'var(--alphard)'};">${v}</div>
+          <div class="sheet-res-who">${r.user}</div>
+          <div class="sheet-res-time">${r.type==='all_day'?'終日':r.start+' – '+r.end}</div>
+        </div>
+        <button class="sheet-del-btn" onclick="deleteResFromSheet('${r.id}','${date}')">✕</button>
+      </div>`).join('');
+  });
+}
+
+function closeSheet(e) {
+  if (e.target.id==='sheetBg') document.getElementById('sheetBg').classList.remove('open');
+}
+
+async function deleteResFromSheet(id, date) {
+    const _ds=await fetch('/api/reservations/'+id,{method:'DELETE'}); if(!_ds.ok){showToast('削除失敗');return;}
+  reservations = reservations.filter(r=>r.id!==id);
+  renderCalendar(); renderResList(); renderHistList();
+  showToast('予約を削除しました');
+  openSheet(date);
+}
+
+function openModalFromSheet() {
+  if (isAllBlocked(selectedDate)) return;
+  document.getElementById('sheetBg').classList.remove('open');
+  openModal(null, selectedDate);
+}
+
+function isAllBlocked(date) {
+  return reservations.some(r=>r.vehicle==='LEXUS NX'&&r.date===date&&r.type==='all_day') &&
+         reservations.some(r=>r.vehicle==='ALPHARD' &&r.date===date&&r.type==='all_day');
+}
+
+// ── MODAL ──
+function openModal(vehicle, date){
+  document.getElementById('modalBg').classList.add('open');
+  if (vehicle) document.getElementById('fVehicle').value=vehicle;
+  const d=date||selectedDate||todayStr();
+  document.getElementById('fDate').value=d;
+  document.getElementById('modalSubtitle').textContent=formatDate(d)+' の予約';
+  checkAvailability();
+}
+function closeModal(e){
+  if (e.target.id==='modalBg') document.getElementById('modalBg').classList.remove('open');
+}
+function setType(type,btn){
+  resType=type;
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('timeRow').classList.toggle('hidden',type==='all_day');
+  checkAvailability();
+}
+
+// ── 空き確認 ──
+function checkAvailability(){
+  const vehicle=document.getElementById('fVehicle').value;
+  const date   =document.getElementById('fDate').value;
+  const start  =document.getElementById('fStart').value;
+  const end    =document.getElementById('fEnd').value;
+  if (!date) return;
+  document.getElementById('modalSubtitle').textContent=formatDate(date)+' の予約';
+
+  ['LEXUS NX','ALPHARD'].forEach(v=>{
+    const conflicts=getConflicts(v,date,resType,start,end);
+    const el=document.getElementById(v==='LEXUS NX'?'availLexus':'availAlphard');
+    el.className='avail-badge';
+    if (!conflicts.length){ el.classList.add('free'); el.querySelector('.ab-stat').textContent='空き'; }
+    else if (conflicts.some(r=>r.type==='all_day')){ el.classList.add('busy'); el.querySelector('.ab-stat').textContent='全日予約済'; }
+    else { el.classList.add('warn'); el.querySelector('.ab-stat').textContent='時間帯重複'; }
+  });
+
+  const conflicts=getConflicts(vehicle,date,resType,start,end);
+  const block=document.getElementById('conflictBlock');
+  const btn  =document.getElementById('submitBtn');
+  if (conflicts.length){
+    block.classList.add('show');
+    document.getElementById('conflictList').innerHTML=conflicts.map(r=>
+      `<div class="conflict-item">・${r.user}（${r.vehicle}）：${r.type==='all_day'?'終日':r.start+' – '+r.end}</div>`
+    ).join('');
+    btn.disabled=true; btn.textContent=`予約不可（競合 ${conflicts.length}件）`;
+  } else {
+    block.classList.remove('show');
+    btn.disabled=false; btn.textContent='予約を確定する';
+  }
+}
+
+// ── 予約登録 ──
+async function submitReservation(){
+  const vehicle=document.getElementById('fVehicle').value;
+  const user   =document.getElementById('fUser').value;
+  const date   =document.getElementById('fDate').value;
+  const start  =document.getElementById('fStart').value;
+  const end    =document.getElementById('fEnd').value;
+  if (!date){showToast('日付を選択してください');return;}
+  if (resType==='time_range' && toMin(start)>=toMin(end)){showToast('終了を開始より後に設定してください');return;}
+  const conflicts=getConflicts(vehicle,date,resType,start,end);
+  if (conflicts.length){showToast('競合する予約があります');return;}
+  const VIDS={'LEXUS NX':'9853a6e5-9521-42b9-bb44-4d788e8bb427','ALPHARD':'2c34a12a-e014-4634-9a14-7194533280f9'};
+  const UIDS={'高瀬健吾':'20f4fab9-e32d-4435-8b08-14a8ddccafd1','高瀬まどか':'d5a798ef-04d1-47f3-9465-83669d77422b','高瀬健一郎':'772bbbf8-3a37-4175-98b5-b5139689e5c9','高瀬英太郎':'1657baf8-5e3a-4311-8aae-86920e359fd0','高瀬光太郎':'b55938b6-f4a9-4505-a0f2-b73f3618c4a2'};
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;btn.textContent='登録中...';
+  try{
+    const res=await fetch('/api/reservations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vehicle_id:VIDS[vehicle],user_id:UIDS[user],type:resType,date,start_at:resType==='all_day'?null:date+'T'+start+':00',end_at:resType==='all_day'?null:date+'T'+end+':00',note:''})});
+    if(!res.ok){const e=await res.json();showToast('登録失敗: '+(e.error||res.status));return;}
+    const data=await res.json();
+    reservations.push({id:data.id,vehicle,user,type:resType,date,start:resType==='all_day'?'':start,end:resType==='all_day'?'':end});
+    document.getElementById('modalBg').classList.remove('open');
+    renderCalendar();renderResList();renderHistList();
+    showToast('予約を登録しました ✓');
+  }catch(e){showToast('エラー: '+e.message);}
+  finally{btn.disabled=false;btn.textContent='予約を確定する';}
+}
+
+// ── TABS ──
+function switchTab(id,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+  if (id==='reservations') renderResList();
+  if (id==='history')      renderHistList();
+}
+
+// ── UTILS ──
+function formatDate(str){
+  if (!str) return '';
+  const [y,m,d]=str.split('-');
+  const dow=['日','月','火','水','木','金','土'][new Date(+y,+m-1,+d).getDay()];
+  return `${+m}月${+d}日（${dow}）`;
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+(async()=>{
+  const _VN={"9853a6e5-9521-42b9-bb44-4d788e8bb427":"LEXUS NX","2c34a12a-e014-4634-9a14-7194533280f9":"ALPHARD"};
+  try{
+    const _r=await fetch("/api/reservations");
+    const _d=await _r.json();
+    reservations=_d.map(x=>({id:x.id,vehicle:x.vehicles?.name||_VN[x.vehicle_id]||x.vehicle_id,user:x.users?.name||x.user_id,type:x.type,date:x.date,start:x.start_at?x.start_at.substring(11,16):"",end:x.end_at?x.end_at.substring(11,16):""}));
+  }catch(_e){console.error("DB:",_e);}
+  renderCalendar();renderResList();renderHistList();
+})();
+</script>
+</body>
+</html>
