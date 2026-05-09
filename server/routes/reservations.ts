@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt, lt } from "drizzle-orm";
 import { z } from "zod";
 
 import { cars, reservations, users } from "../../drizzle/schema";
@@ -53,6 +53,10 @@ function buildDate(value: string, time: string) {
 
 function normalizeReservationDate(value: Date | string) {
   return value instanceof Date ? value : new Date(value);
+}
+
+function hasSameLocalDate(value: Date, date: string) {
+  return formatLocalDate(value) === date;
 }
 
 async function resolveCar(vehicleId: string) {
@@ -155,6 +159,30 @@ router.post("/", async (req, res) => {
 
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       return res.status(400).json({ error: "Invalid start_at or end_at" });
+    }
+
+    if (!isAllDay && (!hasSameLocalDate(startDate, input.date) || !hasSameLocalDate(endDate, input.date))) {
+      return res.status(400).json({ error: "start_at and end_at must be on the reservation date" });
+    }
+
+    if (endDate <= startDate) {
+      return res.status(400).json({ error: "end_at must be after start_at" });
+    }
+
+    const conflicts = await db
+      .select({ id: reservations.id })
+      .from(reservations)
+      .where(
+        and(
+          eq(reservations.carId, car.id),
+          lt(reservations.startDate, endDate),
+          gt(reservations.endDate, startDate),
+        ),
+      )
+      .limit(1);
+
+    if (conflicts.length > 0) {
+      return res.status(409).json({ error: "Reservation time conflicts with an existing reservation" });
     }
 
     const result = await db.insert(reservations).values({
