@@ -70,6 +70,9 @@ async function startServer() {
   const emailRouter = (await import("../routes/email")).default;
   app.use("/api/email", emailRouter);
 
+  const lineRouter = (await import("../routes/line")).default;
+  app.use("/api/line", lineRouter);
+
   const reservationsRouter = (await import("../routes/reservations")).default;
   app.use("/api/reservations", reservationsRouter);
 
