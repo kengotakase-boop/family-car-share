@@ -66,6 +66,9 @@ async function startServer() {
   const emailRouter = (await import("../routes/email")).default;
   app.use("/api/email", emailRouter);
 
+  const reservationsRouter = (await import("../routes/reservations")).default;
+  app.use("/api/reservations", reservationsRouter);
+
   app.use(
     "/api/trpc",
     createExpressMiddleware({
