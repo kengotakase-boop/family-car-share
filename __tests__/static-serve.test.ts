@@ -20,16 +20,20 @@ describe("Static web build serving configuration", () => {
     expect(content).toContain("sendFile");
   });
 
-  it("should have build script that includes expo export", async () => {
+  it("should have production build scripts for web and server output", async () => {
     const fs = await import("fs");
     const path = await import("path");
     const pkgPath = path.resolve(__dirname, "../package.json");
     const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
 
-    // Build script should include expo export for web
-    expect(pkg.scripts.build).toContain("expo export");
-    expect(pkg.scripts.build).toContain("--platform web");
-    expect(pkg.scripts.build).toContain("dist/client");
+    expect(pkg.scripts.build).toContain("build:web");
+    expect(pkg.scripts.build).toContain("build:server");
+    expect(pkg.scripts["build:web"]).toContain("expo export");
+    expect(pkg.scripts["build:web"]).toContain("--platform web");
+    expect(pkg.scripts["build:web"]).toContain("dist/client");
+    expect(pkg.scripts["build:server"]).toContain("esbuild server/_core/index.ts");
+    expect(pkg.scripts["build:server"]).toContain("--outdir=dist");
+    expect(pkg.scripts.start).toBe("NODE_ENV=production node dist/index.js");
   });
 
   it("should have generated static web build in dist/client", async () => {
