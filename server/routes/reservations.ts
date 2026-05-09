@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { cars, reservations, users } from "../../drizzle/schema";
 import { getDb } from "../db";
+import { sendReservationLineNotification } from "../line";
 
 const router = Router();
 
@@ -57,6 +58,14 @@ function normalizeReservationDate(value: Date | string) {
 
 function hasSameLocalDate(value: Date, date: string) {
   return formatLocalDate(value) === date;
+}
+
+function formatReservationTime(isAllDay: boolean, startDate: Date, endDate: Date) {
+  if (isAllDay) {
+    return "終日";
+  }
+
+  return `${pad(startDate.getHours())}:${pad(startDate.getMinutes())}-${pad(endDate.getHours())}:${pad(endDate.getMinutes())}`;
 }
 
 async function resolveCar(vehicleId: string) {
@@ -195,7 +204,16 @@ router.post("/", async (req, res) => {
       comment: input.note ?? "",
     });
 
-    return res.status(201).json({ id: Number(result[0].insertId) });
+    const reservationId = Number(result[0].insertId);
+    void sendReservationLineNotification("created", {
+      carName: car.name,
+      userName: user.name ?? String(user.id),
+      date: input.date,
+      time: formatReservationTime(isAllDay, startDate, endDate),
+      comment: input.note ?? "",
+    });
+
+    return res.status(201).json({ id: reservationId });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: "Invalid reservation payload", details: error.flatten() });
@@ -218,7 +236,37 @@ router.delete("/:id", async (req, res) => {
       return res.status(400).json({ error: "Invalid reservation id" });
     }
 
+    const reservationRows = await db
+      .select({
+        id: reservations.id,
+        startDate: reservations.startDate,
+        endDate: reservations.endDate,
+        isAllDay: reservations.isAllDay,
+        comment: reservations.comment,
+        vehicleName: cars.name,
+        userName: users.name,
+      })
+      .from(reservations)
+      .leftJoin(cars, eq(reservations.carId, cars.id))
+      .leftJoin(users, eq(reservations.userId, users.id))
+      .where(eq(reservations.id, id))
+      .limit(1);
+    const deletedReservation = reservationRows[0];
+
     await db.delete(reservations).where(eq(reservations.id, id));
+    if (deletedReservation) {
+      const startDate = normalizeReservationDate(deletedReservation.startDate);
+      const endDate = normalizeReservationDate(deletedReservation.endDate);
+      const isAllDay = deletedReservation.isAllDay === 1;
+      void sendReservationLineNotification("deleted", {
+        carName: deletedReservation.vehicleName ?? String(id),
+        userName: deletedReservation.userName ?? "",
+        date: formatLocalDate(startDate),
+        time: formatReservationTime(isAllDay, startDate, endDate),
+        comment: deletedReservation.comment ?? "",
+      });
+    }
+
     return res.status(204).send();
   } catch (error) {
     console.error("[Reservations REST] Failed to delete reservation:", error);
