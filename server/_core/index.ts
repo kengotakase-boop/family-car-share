@@ -32,6 +32,10 @@ function getManusIndexPath() {
   return path.resolve(process.cwd(), "server/manus/index_3.html");
 }
 
+function getManusAssetPath(fileName: string) {
+  return path.resolve(process.cwd(), "server/manus", fileName);
+}
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
@@ -75,6 +79,34 @@ async function startServer() {
 
   const reservationsRouter = (await import("../routes/reservations")).default;
   app.use("/api/reservations", reservationsRouter);
+
+  app.get("/manifest.webmanifest", (_req, res, next) => {
+    const manifestPath = getManusAssetPath("manifest.webmanifest");
+    if (!fs.existsSync(manifestPath)) {
+      next();
+      return;
+    }
+    res.type("application/manifest+json").sendFile(manifestPath);
+  });
+
+  const manusIconFiles = [
+    "favicon.ico",
+    "favicon-32.png",
+    "favicon-64.png",
+    "icon-192.png",
+    "icon-512.png",
+    "apple-touch-icon.png",
+  ];
+  for (const fileName of manusIconFiles) {
+    app.get(`/${fileName}`, (_req, res, next) => {
+      const assetPath = getManusAssetPath(fileName);
+      if (!fs.existsSync(assetPath)) {
+        next();
+        return;
+      }
+      res.sendFile(assetPath);
+    });
+  }
 
   app.get("/", (_req, res, next) => {
     const manusIndexPath = getManusIndexPath();
