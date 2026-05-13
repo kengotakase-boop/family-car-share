@@ -882,8 +882,16 @@ function showToast(msg){
   try{
     const _r=await fetch("/api/reservations");
     const _d=await _r.json();
+    if(!_r.ok){
+      console.warn("Reservations API:",_d?.error||_r.status);
+      reservations=[];
+    }else if(!Array.isArray(_d)){
+      console.warn("Reservations API: expected array",_d);
+      reservations=[];
+    }else{
     reservations=_d.map(x=>({id:x.id,vehicle:x.vehicles?.name||_VN[x.vehicle_id]||x.vehicle_id,user:x.users?.name||x.user_id,type:x.type,date:x.date,start:x.start_at?x.start_at.substring(11,16):"",end:x.end_at?x.end_at.substring(11,16):""}));
-  }catch(_e){console.error("DB:",_e);}
+    }
+  }catch(_e){console.error("DB:",_e);reservations=[];}
   renderCalendar();renderResList();renderHistList();
 })();
 </script>

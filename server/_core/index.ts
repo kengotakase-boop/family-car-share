@@ -133,12 +133,27 @@ async function startServer() {
   const clientDir = fs.existsSync(prodClientDir) ? prodClientDir : devClientDir;
   if (fs.existsSync(clientDir)) {
     app.use(express.static(clientDir));
-    // SPA fallback: serve index.html for any non-API route
+    // Serve route-specific prerendered HTML when available, then fall back to the app shell.
     app.get("*", (req, res) => {
       if (req.path.startsWith("/api")) {
         res.status(404).json({ error: "Not Found" });
         return;
       }
+
+      const routeHtmlByPath: Record<string, string> = {
+        "/cars": "cars.html",
+        "/stats": "stats.html",
+        "/settings": "settings.html",
+      };
+      const routeHtml = routeHtmlByPath[req.path];
+      if (routeHtml) {
+        const routeHtmlPath = path.join(clientDir, routeHtml);
+        if (fs.existsSync(routeHtmlPath)) {
+          res.sendFile(routeHtmlPath);
+          return;
+        }
+      }
+
       res.sendFile(path.join(clientDir, "index.html"));
     });
   }
