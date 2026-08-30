@@ -25,7 +25,33 @@ function buildReservationLineText(event: ReservationLineEvent, payload: Reservat
   ].join("\n");
 }
 
-async function pushLineText(text: string) {
+function summarizeLineResponseBody(body: string) {
+  if (!body.trim()) {
+    return "[empty]";
+  }
+
+  try {
+    const parsed = JSON.parse(body) as { message?: unknown; details?: unknown };
+    const summary = {
+      message: typeof parsed.message === "string" ? parsed.message : undefined,
+      details: parsed.details,
+    };
+
+    return JSON.stringify(summary);
+  } catch {
+    return body;
+  }
+}
+
+function redactSensitiveLogValue(value: string) {
+  return value
+    .replace(/Bearer\s+[^\s"']+/gi, "Bearer [REDACTED]")
+    .replace(/[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g, "[REDACTED_TOKEN]")
+    .replace(/\b[CU][0-9a-f]{32,}\b/gi, "[REDACTED_ID]")
+    .slice(0, 500);
+}
+
+async function pushLineText(event: ReservationLineEvent, text: string) {
   if (!isLineNotifyEnabled()) {
     return;
   }
@@ -50,9 +76,17 @@ async function pushLineText(text: string) {
       }),
     });
 
+    console.info(`[LINE] Push API response: ${event} status=${response.status} ok=${response.ok}`);
+
     if (!response.ok) {
+      const responseBody = await response.text();
+      const responseSummary = redactSensitiveLogValue(summarizeLineResponseBody(responseBody));
+      console.warn(`[LINE] Push API error response body: ${event} ${responseSummary}`);
       console.warn(`[LINE] Failed to send notification (${response.status} ${response.statusText})`);
+      return;
     }
+
+    console.info(`[LINE] Notification sent successfully: ${event}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`[LINE] Error sending notification: ${message}`);
@@ -63,5 +97,6 @@ export async function sendReservationLineNotification(
   event: ReservationLineEvent,
   payload: ReservationLinePayload,
 ) {
-  await pushLineText(buildReservationLineText(event, payload));
+  console.info(`[LINE] Sending reservation notification: ${event}`);
+  await pushLineText(event, buildReservationLineText(event, payload));
 }
