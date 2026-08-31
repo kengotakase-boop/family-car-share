@@ -237,9 +237,9 @@ option{background:var(--navy2);}
 
 <!-- TABS -->
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('fleet',this)">Fleet</button>
-  <button class="tab" onclick="switchTab('reservations',this)">予約一覧</button>
-  <button class="tab" onclick="switchTab('history',this)">履歴</button>
+  <button class="tab active" data-tab="fleet" onclick="switchTab('fleet',this)">Fleet</button>
+  <button class="tab" data-tab="reservations" onclick="switchTab('reservations',this)">予約一覧</button>
+  <button class="tab" data-tab="history" onclick="switchTab('history',this)">履歴</button>
 </div>
 
 <!-- FLEET PANEL -->
@@ -855,11 +855,23 @@ async function submitReservation(){
 }
 
 // ── TABS ──
+function initialTabFromPath(){
+  if (location.pathname === '/stats') return 'history';
+  if (location.pathname === '/cars' || location.pathname === '/settings') return 'fleet';
+  return 'fleet';
+}
+function activateInitialTab(){
+  const id = initialTabFromPath();
+  const btn = document.querySelector(`.tab[data-tab="${id}"]`);
+  switchTab(id, btn);
+}
 function switchTab(id,btn){
+  const panel = document.getElementById('panel-'+id);
+  if (!panel) return;
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('panel-'+id).classList.add('active');
-  btn.classList.add('active');
+  panel.classList.add('active');
+  if (btn) btn.classList.add('active');
   if (id==='reservations') renderResList();
   if (id==='history')      renderHistList();
 }
@@ -892,7 +904,7 @@ function showToast(msg){
     reservations=_d.map(x=>({id:x.id,vehicle:x.vehicles?.name||_VN[x.vehicle_id]||x.vehicle_id,user:x.users?.name||x.user_id,type:x.type,date:x.date,start:x.start_at?x.start_at.substring(11,16):"",end:x.end_at?x.end_at.substring(11,16):""}));
     }
   }catch(_e){console.error("DB:",_e);reservations=[];}
-  renderCalendar();renderResList();renderHistList();
+  renderCalendar();renderResList();renderHistList();activateInitialTab();
 })();
 </script>
 </body>

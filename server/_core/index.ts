@@ -36,6 +36,15 @@ function getManusAssetPath(fileName: string) {
   return path.resolve(process.cwd(), "server/manus", fileName);
 }
 
+function sendManusIndex(res: express.Response, next: express.NextFunction) {
+  const manusIndexPath = getManusIndexPath();
+  if (!fs.existsSync(manusIndexPath)) {
+    next();
+    return;
+  }
+  res.sendFile(manusIndexPath);
+}
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
@@ -109,12 +118,11 @@ async function startServer() {
   }
 
   app.get("/", (_req, res, next) => {
-    const manusIndexPath = getManusIndexPath();
-    if (!fs.existsSync(manusIndexPath)) {
-      next();
-      return;
-    }
-    res.sendFile(manusIndexPath);
+    sendManusIndex(res, next);
+  });
+
+  app.get(["/cars", "/stats", "/settings"], (_req, res, next) => {
+    sendManusIndex(res, next);
   });
 
   app.use(
