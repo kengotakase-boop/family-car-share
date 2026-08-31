@@ -1,0 +1,42 @@
+{
+  "buildCommand": "pnpm build:web",
+  "outputDirectory": "dist/client",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/favicon-32.png",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/favicon-64.png",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/icon-192.png",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/icon-512.png",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/apple-touch-icon.png",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

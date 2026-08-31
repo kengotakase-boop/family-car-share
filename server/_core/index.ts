@@ -45,9 +45,13 @@ function sendManusIndex(res: express.Response, next: express.NextFunction) {
   res.sendFile(manusIndexPath);
 }
 
-async function startServer() {
+function unwrapDefault<T>(module: unknown): T {
+  const first = (module as { default?: unknown }).default ?? module;
+  return ((first as { default?: unknown }).default ?? first) as T;
+}
+
+export async function createApp() {
   const app = express();
-  const server = createServer(app);
 
   // Enable CORS for all routes - reflect the request origin to support credentials
   app.use((req, res, next) => {
@@ -80,13 +84,13 @@ async function startServer() {
   });
 
   // Email API routes
-  const emailRouter = (await import("../routes/email")).default;
+  const emailRouter = unwrapDefault<express.Router>(await import("../routes/email.js"));
   app.use("/api/email", emailRouter);
 
-  const lineRouter = (await import("../routes/line")).default;
+  const lineRouter = unwrapDefault<express.Router>(await import("../routes/line.js"));
   app.use("/api/line", lineRouter);
 
-  const reservationsRouter = (await import("../routes/reservations")).default;
+  const reservationsRouter = unwrapDefault<express.Router>(await import("../routes/reservations.js"));
   app.use("/api/reservations", reservationsRouter);
 
   app.get("/manifest.webmanifest", (_req, res, next) => {
@@ -136,8 +140,8 @@ async function startServer() {
   // Serve static web build in production
   // In dev: server/_core/index.ts -> ../../dist/client
   // In prod (esbuild bundle): dist/index.js -> ./client
-  const devClientDir = path.resolve(import.meta.dirname ?? __dirname, "../../dist/client");
-  const prodClientDir = path.resolve(import.meta.dirname ?? __dirname, "./client");
+  const devClientDir = path.resolve(__dirname, "../../dist/client");
+  const prodClientDir = path.resolve(__dirname, "./client");
   const clientDir = fs.existsSync(prodClientDir) ? prodClientDir : devClientDir;
   if (fs.existsSync(clientDir)) {
     app.use(express.static(clientDir));
@@ -166,6 +170,12 @@ async function startServer() {
     });
   }
 
+  return app;
+}
+
+async function startServer() {
+  const app = await createApp();
+  const server = createServer(app);
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
 
@@ -178,4 +188,7 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+if (process.env.VERCEL !== "1") {
+  startServer().catch(console.error);
+}
+
