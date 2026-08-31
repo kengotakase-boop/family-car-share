@@ -4,10 +4,6 @@ import { createServer } from "http";
 import net from "net";
 import path from "path";
 import fs from "fs";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
-import { appRouter } from "../routers";
-import { createContext } from "./context";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -52,6 +48,7 @@ function unwrapDefault<T>(module: unknown): T {
 
 export async function createApp() {
   const app = express();
+  const isVercelFunction = process.env.VERCEL === "1";
 
   // Enable CORS for all routes - reflect the request origin to support credentials
   app.use((req, res, next) => {
@@ -77,7 +74,10 @@ export async function createApp() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  registerOAuthRoutes(app);
+  if (!isVercelFunction) {
+    const { registerOAuthRoutes } = await import("./oauth.js");
+    registerOAuthRoutes(app);
+  }
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
@@ -129,13 +129,21 @@ export async function createApp() {
     sendManusIndex(res, next);
   });
 
-  app.use(
-    "/api/trpc",
-    createExpressMiddleware({
-      router: appRouter,
-      createContext,
-    }),
-  );
+  if (!isVercelFunction) {
+    const [{ createExpressMiddleware }, { appRouter }, { createContext }] = await Promise.all([
+      import("@trpc/server/adapters/express"),
+      import("../routers.js"),
+      import("./context.js"),
+    ]);
+
+    app.use(
+      "/api/trpc",
+      createExpressMiddleware({
+        router: appRouter,
+        createContext,
+      }),
+    );
+  }
 
   // Serve static web build in production
   // In dev: server/_core/index.ts -> ../../dist/client
