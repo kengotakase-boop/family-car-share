@@ -2,8 +2,7 @@ import { Router } from "express";
 import { and, desc, eq, gt, lt } from "drizzle-orm";
 import { z } from "zod";
 
-import { cars, reservations, users } from "../../drizzle/schema";
-import { getDb } from "../db";
+import { createReservation, getDb, getTables } from "../db";
 import { sendReservationLineNotification } from "../line";
 
 const router = Router();
@@ -72,18 +71,20 @@ async function resolveCar(vehicleId: string) {
   const db = await getDb();
   if (!db) return null;
 
+  const { cars } = getTables();
   const aliases = VEHICLE_ID_TO_ALIASES[vehicleId] ?? [vehicleId];
   const rows = await db.select().from(cars);
-  return rows.find((car) => includesAlias(car.name, aliases)) ?? null;
+  return rows.find((car: { name: string | null }) => includesAlias(car.name, aliases)) ?? null;
 }
 
 async function resolveUser(userId: string) {
   const db = await getDb();
   if (!db) return null;
 
+  const { users } = getTables();
   const aliases = USER_ID_TO_ALIASES[userId] ?? [userId];
   const rows = await db.select().from(users);
-  return rows.find((user) => includesAlias(user.name, aliases)) ?? null;
+  return rows.find((user: { name: string | null }) => includesAlias(user.name, aliases)) ?? null;
 }
 
 router.get("/", async (_req, res) => {
@@ -93,6 +94,7 @@ router.get("/", async (_req, res) => {
       return res.status(503).json({ error: "DATABASE_URL is not configured" });
     }
 
+    const { cars, reservations, users } = getTables();
     const rows = await db
       .select({
         id: reservations.id,
@@ -112,7 +114,7 @@ router.get("/", async (_req, res) => {
       .orderBy(desc(reservations.startDate));
 
     return res.json(
-      rows.map((row) => {
+      rows.map((row: any) => {
         const startDate = normalizeReservationDate(row.startDate);
         const endDate = normalizeReservationDate(row.endDate);
 
@@ -143,6 +145,7 @@ router.post("/", async (req, res) => {
       return res.status(503).json({ error: "DATABASE_URL is not configured" });
     }
 
+    const { reservations } = getTables();
     const input = postReservationSchema.parse(req.body);
     const car = await resolveCar(input.vehicle_id);
     if (!car) {
@@ -194,7 +197,7 @@ router.post("/", async (req, res) => {
       return res.status(409).json({ error: "Reservation time conflicts with an existing reservation" });
     }
 
-    const result = await db.insert(reservations).values({
+    const reservationId = await createReservation({
       carId: car.id,
       userId: user.id,
       familyGroupId: car.familyGroupId,
@@ -203,8 +206,6 @@ router.post("/", async (req, res) => {
       isAllDay: isAllDay ? 1 : 0,
       comment: input.note ?? "",
     });
-
-    const reservationId = Number(result[0].insertId);
     void sendReservationLineNotification("created", {
       carName: car.name,
       userName: user.name ?? String(user.id),
@@ -231,6 +232,7 @@ router.delete("/:id", async (req, res) => {
       return res.status(503).json({ error: "DATABASE_URL is not configured" });
     }
 
+    const { cars, reservations, users } = getTables();
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ error: "Invalid reservation id" });
