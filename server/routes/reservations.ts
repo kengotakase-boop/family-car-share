@@ -39,16 +39,22 @@ function pad(value: number) {
   return String(value).padStart(2, "0");
 }
 
+function getJstDate(value: Date) {
+  return new Date(value.getTime() + 9 * 60 * 60 * 1000);
+}
+
 function formatLocalDate(value: Date) {
-  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+  const jstDate = getJstDate(value);
+  return `${jstDate.getUTCFullYear()}-${pad(jstDate.getUTCMonth() + 1)}-${pad(jstDate.getUTCDate())}`;
 }
 
 function formatLocalDateTime(value: Date) {
-  return `${formatLocalDate(value)}T${pad(value.getHours())}:${pad(value.getMinutes())}:00`;
+  const jstDate = getJstDate(value);
+  return `${formatLocalDate(value)}T${pad(jstDate.getUTCHours())}:${pad(jstDate.getUTCMinutes())}:00`;
 }
 
 function buildDate(value: string, time: string) {
-  return new Date(`${value}T${time}:00`);
+  return new Date(`${value}T${time}:00+09:00`);
 }
 
 function normalizeReservationDate(value: Date | string) {
@@ -64,7 +70,9 @@ function formatReservationTime(isAllDay: boolean, startDate: Date, endDate: Date
     return "終日";
   }
 
-  return `${pad(startDate.getHours())}:${pad(startDate.getMinutes())}-${pad(endDate.getHours())}:${pad(endDate.getMinutes())}`;
+  const start = getJstDate(startDate);
+  const end = getJstDate(endDate);
+  return `${pad(start.getUTCHours())}:${pad(start.getUTCMinutes())}-${pad(end.getUTCHours())}:${pad(end.getUTCMinutes())}`;
 }
 
 async function resolveCar(vehicleId: string) {
