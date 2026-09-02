@@ -214,7 +214,7 @@ router.post("/", async (req, res) => {
       isAllDay: isAllDay ? 1 : 0,
       comment: input.note ?? "",
     });
-    void sendReservationLineNotification("created", {
+    await sendReservationLineNotification("created", {
       carName: car.name,
       userName: user.name ?? String(user.id),
       date: input.date,
@@ -268,7 +268,7 @@ router.delete("/:id", async (req, res) => {
       const startDate = normalizeReservationDate(deletedReservation.startDate);
       const endDate = normalizeReservationDate(deletedReservation.endDate);
       const isAllDay = deletedReservation.isAllDay === 1;
-      void sendReservationLineNotification("deleted", {
+      await sendReservationLineNotification("deleted", {
         carName: deletedReservation.vehicleName ?? String(id),
         userName: deletedReservation.userName ?? "",
         date: formatLocalDate(startDate),
