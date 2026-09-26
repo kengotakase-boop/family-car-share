@@ -57,6 +57,11 @@ function buildDate(value: string, time: string) {
   return new Date(`${value}T${time}:00+09:00`);
 }
 
+function parseReservationDateTime(value: string | null | undefined) {
+  if (!value) return new Date(NaN);
+  return new Date(/(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}+09:00`);
+}
+
 function normalizeReservationDate(value: Date | string) {
   return value instanceof Date ? value : new Date(value);
 }
@@ -172,10 +177,10 @@ router.post("/", async (req, res) => {
     const isAllDay = input.type === "all_day";
     const startDate = isAllDay
       ? buildDate(input.date, "00:00")
-      : new Date(input.start_at ?? "");
+      : parseReservationDateTime(input.start_at);
     const endDate = isAllDay
       ? buildDate(input.date, "23:59")
-      : new Date(input.end_at ?? "");
+      : parseReservationDateTime(input.end_at);
 
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       return res.status(400).json({ error: "Invalid start_at or end_at" });
